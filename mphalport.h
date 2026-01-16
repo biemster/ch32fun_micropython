@@ -6,6 +6,12 @@
 
 extern QueueHandle_t tty_rx_queue;
 
+#ifdef CH570_CH572
+#define LED_PIN   PA9
+#else
+#define LED_PIN   PA8
+#endif
+
 static inline mp_uint_t mp_hal_ticks_ms(void) {
 	return xTaskGetTickCount() * portTICK_PERIOD_MS;
 }
@@ -25,9 +31,14 @@ static inline mp_uint_t mp_hal_stdout_tx_strn(const char *str, size_t len) {
 }
 
 static inline int mp_hal_stdin_rx_chr(void) {
-    char c = 0;
-    xQueueReceive(tty_rx_queue, &c, portMAX_DELAY);
-    return c;
+	char c = 0;
+	while(1) {
+		poll_input();
+		if (xQueueReceive(tty_rx_queue, &c, 1) == pdTRUE) {
+			GPIO_InverseBits(LED_PIN);
+			return (c == '\n') ? '\r' : c;
+		}
+	}
 }
 
 // We can leave this empty for now, or use it to handle CTRL-C

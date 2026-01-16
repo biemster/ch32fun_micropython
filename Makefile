@@ -1,8 +1,8 @@
 all : flash
 
 TARGET:=micropython
-TARGET_MCU:=CH585
-TARGET_MCU_PACKAGE:=CH585M
+TARGET_MCU:=CH570
+TARGET_MCU_PACKAGE:=CH570D
 
 CH32FUN_PATH = $(abspath ../ch32fun/)
 FREERTOS_PATH = $(abspath ../ch32fun_freertos/FreeRTOS/)
@@ -14,7 +14,8 @@ EXTRA_CFLAGS += \
 	-I$(FREERTOS_PATH)/include \
 	-I$(FREERTOS_PATH)/portable/GCC/RISC-V \
 	-I$(MICROPYTHON_PATH) \
-	-I$(MICROPYTHON_PATH)/py
+	-I$(MICROPYTHON_PATH)/py \
+	-DNDEBUG
 
 FREERTOS_SRC += \
 	$(FREERTOS_PATH)/croutine.c \
@@ -122,14 +123,12 @@ MICROPYTHON_SRC_STDLIB += \
 
 
 MICROPYTHON_SRC_HELPERS += \
-	$(MICROPYTHON_PATH)/shared/libc/string0.c \
 	$(MICROPYTHON_PATH)/shared/runtime/pyexec.c \
 	$(MICROPYTHON_PATH)/shared/runtime/interrupt_char.c \
 	$(MICROPYTHON_PATH)/shared/runtime/stdout_helpers.c \
 	$(MICROPYTHON_PATH)/shared/runtime/sys_stdio_mphal.c \
 	$(MICROPYTHON_PATH)/shared/readline/readline.c \
-	$(MICROPYTHON_PATH)/shared/runtime/gchelper_rv32i.s \
-	./mpthreadport.c
+	$(MICROPYTHON_PATH)/shared/runtime/gchelper_rv32i.s
 
 MICROPYTHON_SRC += \
 	$(MICROPYTHON_SRC_RUNTIME) \
