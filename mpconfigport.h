@@ -30,10 +30,10 @@
 
 // --- Memory Saving Configuration ---
 // 1. Disable Floating Point (Saves huge code space and RAM)
-#define MICROPY_FLOAT_IMPL                  (MICROPY_FLOAT_IMPL_NONE)
+#define MICROPY_FLOAT_IMPL                  (MICROPY_FLOAT_IMPL_FLOAT)
 
 // 2. Disable Long Integers (Only use 31-bit small ints)
-#define MICROPY_LONGINT_IMPL                (MICROPY_LONGINT_IMPL_NONE)
+#define MICROPY_LONGINT_IMPL                (MICROPY_LONGINT_IMPL_LONGLONG)
 
 // 3. Disable Error Reporting details
 #define MICROPY_ERROR_REPORTING             (MICROPY_ERROR_REPORTING_TERSE)
@@ -41,29 +41,28 @@
 #define MICROPY_ENABLE_DOC_STRING           (0)
 
 // 4. Disable expensive core features
-#define MICROPY_PY_BUILTINS_COMPLEX         (0)
-#define MICROPY_PY_BUILTINS_SET             (0)
-#define MICROPY_PY_BUILTINS_SLICE           (0)
-#define MICROPY_PY_BUILTINS_PROPERTY        (0)
-#define MICROPY_PY_BUILTINS_MIN_MAX         (0)
-#define MICROPY_PY_BUILTINS_STR_COUNT       (0)
-#define MICROPY_PY_BUILTINS_STR_OP_MODULO   (0) // No % string formatting
-#define MICROPY_PY_MATH                     (0)
-#define MICROPY_PY_CMATH                    (0)
+#define MICROPY_PY_BUILTINS_COMPLEX         (1) // doesn't work because of floats for some reason
+#define MICROPY_PY_BUILTINS_SET             (1)
+#define MICROPY_PY_BUILTINS_SLICE           (1)
+#define MICROPY_PY_BUILTINS_PROPERTY        (1)
+#define MICROPY_PY_BUILTINS_MIN_MAX         (1)
+#define MICROPY_PY_BUILTINS_STR_COUNT       (1)
+#define MICROPY_PY_BUILTINS_STR_OP_MODULO   (1) // No % string formatting
+#define MICROPY_PY_MATH                     (1)
+#define MICROPY_PY_CMATH                    (1)
 #define MICROPY_PY_IO                       (0) // Use print() but no file objects
-#define MICROPY_PY_STRUCT                   (0)
+#define MICROPY_PY_STRUCT                   (1)
 #define MICROPY_PY_SYS                      (1) // Needed for startup
-#define MICROPY_CPYTHON_COMPAT              (0)
+#define MICROPY_CPYTHON_COMPAT              (1)
 
 // 5. Shrink Internal Structures
 #define MICROPY_ALLOC_PATH_MAX              (32)
 #define MICROPY_QSTR_BYTES_IN_HASH          (1)
 
-// Disable all optional sys module features.
-#define MICROPY_PY_SYS_MODULES              (0)
-#define MICROPY_PY_SYS_EXIT                 (0)
-#define MICROPY_PY_SYS_PATH                 (0)
-#define MICROPY_PY_SYS_ARGV                 (0)
+#define MICROPY_PY_SYS_MODULES              (1)
+#define MICROPY_PY_SYS_EXIT                 (1)
+#define MICROPY_PY_SYS_PATH                 (1)
+#define MICROPY_PY_SYS_ARGV                 (1)
 
 // type definitions for the specific machine
 

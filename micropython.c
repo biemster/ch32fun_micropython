@@ -17,6 +17,9 @@
 #include "fsusb.h"
 #endif
 
+extern int errno; // for libm
+int *__errno(void) { return &errno; }
+
 #if MICROPY_ENABLE_COMPILER
 void do_str(const char *src, mp_parse_input_kind_t input_kind) {
 	nlr_buf_t nlr;
