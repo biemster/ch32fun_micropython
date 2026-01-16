@@ -38,42 +38,12 @@ void do_str(const char *src, mp_parse_input_kind_t input_kind) {
 #endif
 
 #if MICROPY_ENABLE_GC
-void gc_helper_get_regs_and_sp(mp_uint_t *regs);
-
-void gc_helper_collect_regs_and_stack(void) {
-    // Buffer to hold registers. 
-    // RISC-V 32I saves: ra, sp, gp, tp, s0-s11 (approx 16 registers).
-    // We allocate 32 just to be safe and maintain alignment.
-    mp_uint_t regs[32];
-
-    // Call the assembly function. 
-    // This saves CPU registers into the 'regs' array.
-    // Crucially, it saves the current Stack Pointer (SP) into regs[1].
-    gc_helper_get_regs_and_sp(regs);
-
-    // 1. Scan the captured registers (Live pointers in CPU)
-    gc_collect_root((void**)regs, sizeof(regs) / sizeof(mp_uint_t));
-
-    // 2. Scan the Stack
-    // MicroPython requires us to know the top of the stack.
-    // In a Bare Metal port, this is usually &_estack.
-    // In FreeRTOS, this must be the top of the CURRENT TASK's stack.
-    void **stack_top = (void**)MP_STATE_THREAD(stack_top);
-    
-    // The bottom of the stack is the SP we just captured in regs[1]
-    void **stack_ptr = (void**)regs[1];
-
-    // Sanity check: Ensure stack grows down (Standard RISC-V) 
-    // and that SP is within bounds.
-    if (stack_ptr < stack_top) {
-        gc_collect_root(stack_ptr, stack_top - stack_ptr);
-    }
-}
+void gc_helper_collect_regs_and_stack(void);
 
 void gc_collect(void) {
-    gc_collect_start();
-    gc_helper_collect_regs_and_stack();
-    gc_collect_end();
+	gc_collect_start();
+	gc_helper_collect_regs_and_stack();
+	gc_collect_end();
 }
 #endif
 
@@ -89,15 +59,9 @@ void handle_debug_input(int numbytes, uint8_t *data) {
 // __HIGH_CODE
 TaskHandle_t MicroPythonTask_Handler;
 void micropython_task(void *pvParameters) {
-//	while (1) {
-//		GPIO_InverseBits(LED_PIN);
-//		vTaskDelay(configTICK_RATE_HZ / 4);
-//	}
-//}
-//void mptsk() {
 	// 1. Initialize the stack limit so GC doesn't overflow
-	char *sp = (char*)__builtin_frame_address(0);
-	mp_stack_set_top(sp);
+	volatile uint32_t sp;
+	mp_stack_set_top((void*)&sp);
 	mp_stack_set_limit((MICROPY_STACK_SIZE) - 512);
 
 	// 2. Initialize the heap

@@ -31,7 +31,7 @@ FREERTOS_SRC += \
 
 MICROPYTHON_SRC += \
 	$(MICROPYTHON_PATH)/py/*.c \
-	$(MICROPYTHON_PATH)/shared/runtime/gchelper_rv32i.s \
+	$(MICROPYTHON_PATH)/shared/runtime/gchelper_generic.c \
 	$(MICROPYTHON_PATH)/shared/runtime/pyexec.c \
 	$(MICROPYTHON_PATH)/shared/runtime/interrupt_char.c \
 	$(MICROPYTHON_PATH)/shared/runtime/stdout_helpers.c \
