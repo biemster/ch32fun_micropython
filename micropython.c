@@ -48,13 +48,20 @@ void gc_collect(void) {
 #endif
 
 QueueHandle_t tty_rx_queue; // for the REPL
-void handle_debug_input(int numbytes, uint8_t *data) {
+void handle_input(int numbytes, uint8_t *data) {
 	if (numbytes > 0 && tty_rx_queue != NULL) {
-		char c = (char)data[0];
-		// Send to queue, do not block (wait 0) if queue is full
-		xQueueSend(tty_rx_queue, &c, 0); 
+		for(int i = 0; i < numbytes; i++) {
+			char c = (char)data[i];
+			// Send to queue, do not block (wait 0) if queue is full
+			xQueueSend(tty_rx_queue, &c, 0);
+		}
 	}
 }
+#if defined(FUNCONF_USE_DEBUGPRINTF) && FUNCONF_USE_DEBUGPRINTF
+void handle_debug_input(int numbytes, uint8_t *data) { handle_input(numbytes, data); }
+#elif defined(FUNCONF_USE_USBPRINTF) && FUNCONF_USE_USBPRINTF
+void handle_usbfs_input(int numbytes, uint8_t *data) { handle_input(numbytes, data); }
+#endif
 
 // __HIGH_CODE
 TaskHandle_t MicroPythonTask_Handler;
