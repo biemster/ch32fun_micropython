@@ -1,10 +1,5 @@
 #include <stdio.h>
 #include "ch32fun.h"
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "task.h"
-
-extern QueueHandle_t tty_rx_queue;
 
 #ifdef CH570_CH572
 #define LED_PIN   PA9
@@ -12,14 +7,17 @@ extern QueueHandle_t tty_rx_queue;
 #define LED_PIN   PA8
 #endif
 
+#define RX_BUF_SIZE 64
+extern volatile uint8_t rx_buf[RX_BUF_SIZE];
+extern volatile int rx_head;
+extern volatile int rx_tail;
+
 static inline mp_uint_t mp_hal_ticks_ms(void) {
-	return xTaskGetTickCount() * portTICK_PERIOD_MS;
+	return SysTick->CNTL * DELAY_MS_TIME;
 }
 
 static inline void mp_hal_delay_ms(mp_uint_t ms) {
-	uint32_t ticks = ms / portTICK_PERIOD_MS;
-	if (ticks == 0) ticks = 1;
-	vTaskDelay(ticks);
+	Delay_Ms(ms);
 }
 
 // stdout
@@ -34,8 +32,10 @@ static inline int mp_hal_stdin_rx_chr(void) {
 	char c = 0;
 	while(1) {
 		poll_input();
-		if (xQueueReceive(tty_rx_queue, &c, 1) == pdTRUE) {
+		if (rx_head != rx_tail) {
 			GPIO_InverseBits(LED_PIN);
+			c = rx_buf[rx_tail];
+			rx_tail = (rx_tail + 1) % RX_BUF_SIZE;
 			return (c == '\n') ? '\r' : c;
 		}
 	}

@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include "ch32fun.h"
-#include "FreeRTOS.h"
-#include "task.h"
 
 #include "py/mphal.h"
 #include "py/builtin.h"
@@ -47,13 +45,16 @@ void gc_collect(void) {
 }
 #endif
 
-QueueHandle_t tty_rx_queue; // for the REPL
+volatile uint8_t rx_buf[RX_BUF_SIZE];
+volatile int rx_head;
+volatile int rx_tail;
 void handle_input(int numbytes, uint8_t *data) {
-	if (numbytes > 0 && tty_rx_queue != NULL) {
-		for(int i = 0; i < numbytes; i++) {
-			char c = (char)data[i];
-			// Send to queue, do not block (wait 0) if queue is full
-			xQueueSend(tty_rx_queue, &c, 0);
+	for (int i = 0; i < numbytes; i++) {
+		int next = (rx_head + 1) % RX_BUF_SIZE;
+
+		if (next != rx_tail) {
+			rx_buf[rx_head] = data[i];
+			rx_head = next;
 		}
 	}
 }
@@ -64,32 +65,31 @@ void handle_usbfs_input(int numbytes, uint8_t *data) { handle_input(numbytes, da
 #endif
 
 // __HIGH_CODE
-TaskHandle_t MicroPythonTask_Handler;
-void micropython_task(void *pvParameters) {
+static uint8_t mp_heap[MICROPY_HEAP_SIZE];
+void micropython_task() {
 	// 1. Initialize the stack limit so GC doesn't overflow
 	volatile uint32_t sp;
 	mp_stack_set_top((void*)&sp);
 	mp_stack_set_limit((MICROPY_STACK_SIZE) - 512);
 
 	// 2. Initialize the heap
-	void *mp_heap_ptr = pvPortMalloc(MICROPY_HEAP_SIZE);
 #if MICROPY_ENABLE_GC
-	gc_init(mp_heap_ptr, mp_heap_ptr + MICROPY_HEAP_SIZE);
+	gc_init(mp_heap, mp_heap +sizeof(mp_heap));
 #endif
 
 	// 3. Start
-	tty_rx_queue = xQueueCreate(64, sizeof(char));
 	mp_init();
 	mp_hal_stdout_tx_strn("Booting MicroPython\r\n", 21);
 
 	// This function will block inside mp_hal_stdin_rx_chr() waiting for input.
 	// When it blocks, FreeRTOS will swap to other tasks.
-	for (;;) {
+	while (1) {
 		if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
 			if (pyexec_raw_repl() != 0) {
 				break; // sys.exit() called
 			}
-		} else {
+		}
+		else {
 			if (pyexec_friendly_repl() != 0) {
 				break; // sys.exit() called
 			}
@@ -97,7 +97,6 @@ void micropython_task(void *pvParameters) {
 	}
 	
 	mp_deinit();	
-	vTaskDelete(NULL); 
 }
 
 
@@ -112,16 +111,9 @@ int main(void) {
 
 	printf("Booting MCU\n");
 
-	xTaskCreate((TaskFunction_t)micropython_task,
-				(const char *)"micropython",
-				(uint16_t)MICROPY_STACK_SIZE /4, // xTaskCreate takes words, while the macro is in bytes
-				(void *)NULL,
-				(UBaseType_t)MICROPY_TASK_PRIO,
-				(TaskHandle_t *)&MicroPythonTask_Handler);
-
-	vTaskStartScheduler();
-
-	while(1); // shouldn't run at here!!
+	while(1) {
+		micropython_task();
+	}
 }
 
 

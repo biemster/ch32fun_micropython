@@ -55,4 +55,4 @@ $(MODULEDEFS_HEADER): $(QSTR_GENERATED_HEADER) | $(GENHDR_DIR)
 	$(PYTHON) $(MICROPYTHON_PATH)/py/makemoduledefs.py \
 		$(GENHDR_DIR)/moduledefs.collected > $@
 
-$(ADDITIONAL_C_FILES:.c=.o) $(TARGET).o : $(MODULEDEFS_HEADER)
+$(TARGET).c : $(MODULEDEFS_HEADER)
