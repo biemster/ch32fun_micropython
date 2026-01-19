@@ -3,6 +3,8 @@ all : flash
 TARGET:=micropython
 TARGET_MCU:=CH570
 TARGET_MCU_PACKAGE:=CH570D
+#TARGET_MCU:=CH32V208
+#TARGET_MCU_PACKAGE:=CH32V208WBU6
 
 CH32FUN_PATH = $(abspath ../ch32fun/)
 MICROPYTHON_PATH = $(abspath ../micropython/)

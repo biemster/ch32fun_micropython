@@ -28,7 +28,7 @@ $(QSTR_GENERATED_HEADER): $(MICROPYTHON_SRC) $(MPVERSION_HEADER) $(ROOT_POINTERS
 	$(PYTHON) $(MICROPYTHON_PATH)/py/makeqstrdefs.py pp \
 		$(PREFIX)-gcc -E \
 		output $(GENHDR_DIR)/qstr.collected \
-		cflags -DNO_QSTR $(filter -I%, $(CFLAGS)) \
+		cflags -DNO_QSTR $(CFLAGS) \
 		sources $(filter %.c, $(MICROPYTHON_SRC)) \
 		dependencies $(GENHDR_DIR)/qstr.dep
 
@@ -37,7 +37,7 @@ $(QSTR_GENERATED_HEADER): $(MICROPYTHON_SRC) $(MPVERSION_HEADER) $(ROOT_POINTERS
 	@echo "  QSTR: Preprocessing..."
 	$(PREFIX)-gcc -E -P \
 		-DNO_QSTR \
-		$(filter -I%, $(CFLAGS)) \
+		$(CFLAGS) \
 		$(GENHDR_DIR)/qstrdefs.raw.h > $(GENHDR_DIR)/qstrdefs.pre.h
 	awk '{print gensub(/MP_QSTR_([a-zA-Z0-9_]*)/, "\nQ(\\1)\n", "g")}' $(GENHDR_DIR)/qstrdefs.pre.h > $(GENHDR_DIR)/qstrdefs.post.h
 
@@ -48,7 +48,7 @@ $(MODULEDEFS_HEADER): $(QSTR_GENERATED_HEADER) | $(GENHDR_DIR)
 	@echo "  GEN: moduledefs.h"
 	$(PREFIX)-gcc -E \
 		-DNO_QSTR \
-		$(filter -I%, -$(CFLAGS)) \
+		$(CFLAGS) \
 		-D'MP_REGISTER_MODULE(name, obj)=MP_REGISTER_MODULE(name, obj)' \
 		$(filter %.c, $(MICROPYTHON_SRC)) > $(GENHDR_DIR)/moduledefs.collected
 
