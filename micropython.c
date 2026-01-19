@@ -64,25 +64,11 @@ void handle_debug_input(int numbytes, uint8_t *data) { handle_input(numbytes, da
 void handle_usbfs_input(int numbytes, uint8_t *data) { handle_input(numbytes, data); }
 #endif
 
-// __HIGH_CODE
 static uint8_t mp_heap[MICROPY_HEAP_SIZE];
+
+// __HIGH_CODE // adds 1.2kB to RAM
 void micropython_task() {
-	// 1. Initialize the stack limit so GC doesn't overflow
-	volatile uint32_t sp;
-	mp_stack_set_top((void*)&sp);
-	mp_stack_set_limit((MICROPY_STACK_SIZE) - 512);
-
-	// 2. Initialize the heap
-#if MICROPY_ENABLE_GC
-	gc_init(mp_heap, mp_heap +sizeof(mp_heap));
-#endif
-
-	// 3. Start
-	mp_init();
-	mp_hal_stdout_tx_strn("Booting MicroPython\r\n", 21);
-
-	// This function will block inside mp_hal_stdin_rx_chr() waiting for input.
-	// When it blocks, FreeRTOS will swap to other tasks.
+	// This loop will block inside mp_hal_stdin_rx_chr() waiting for input.
 	while (1) {
 		if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
 			if (pyexec_raw_repl() != 0) {
@@ -103,13 +89,23 @@ void micropython_task() {
 int main(void) {
 	SystemInit();
 	funGpioInitAll(); // no-op on ch5xx
-	funPinMode(LED_PIN, GPIO_CFGLR_OUT_10Mhz_PP);
 
 #if defined(FUNCONF_USE_USBPRINTF) && FUNCONF_USE_USBPRINTF
 	USBFSSetup();
 #endif
 
 	printf("Booting MCU\n");
+
+	volatile uint32_t sp;
+	mp_stack_set_top((void*)&sp);
+	mp_stack_set_limit((MICROPY_STACK_SIZE) - 512);
+
+#if MICROPY_ENABLE_GC
+	gc_init(mp_heap, mp_heap +sizeof(mp_heap));
+#endif
+
+	mp_init();
+	mp_hal_stdout_tx_strn("Booting MicroPython\r\n", 21);
 
 	while(1) {
 		micropython_task();

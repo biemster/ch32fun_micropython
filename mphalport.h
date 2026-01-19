@@ -12,8 +12,20 @@ extern volatile uint8_t rx_buf[RX_BUF_SIZE];
 extern volatile int rx_head;
 extern volatile int rx_tail;
 
+static inline mp_uint_t mp_hal_ticks_cpu(void) {
+	return SysTick->CNTL;
+}
+
+static inline mp_uint_t mp_hal_ticks_us(void) {
+	return SysTick->CNTL * DELAY_US_TIME;
+}
+
 static inline mp_uint_t mp_hal_ticks_ms(void) {
 	return SysTick->CNTL * DELAY_MS_TIME;
+}
+
+static inline void mp_hal_delay_us(mp_uint_t us) {
+	Delay_Us(us);
 }
 
 static inline void mp_hal_delay_ms(mp_uint_t ms) {
@@ -33,7 +45,6 @@ static inline int mp_hal_stdin_rx_chr(void) {
 	while(1) {
 		poll_input();
 		if (rx_head != rx_tail) {
-			GPIO_InverseBits(LED_PIN);
 			c = rx_buf[rx_tail];
 			rx_tail = (rx_tail + 1) % RX_BUF_SIZE;
 			return (c == '\n') ? '\r' : c;

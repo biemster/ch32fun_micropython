@@ -49,11 +49,15 @@
 #define MICROPY_PY_BUILTINS_MIN_MAX         (1)
 #define MICROPY_PY_BUILTINS_STR_COUNT       (1)
 #define MICROPY_PY_BUILTINS_STR_OP_MODULO   (1) // No % string formatting
+#define MICROPY_PY_SYS                      (1) // Needed for startup
+#define MICROPY_PY_TIME                     (1)
+#define MICROPY_PY_TIME_GMTIME              (0)
+#define MICROPY_PY_TIME_LOCALTIME           (0)
+#define MICROPY_PY_TIME_TIME_NS             (0)
 #define MICROPY_PY_MATH                     (1)
 #define MICROPY_PY_CMATH                    (1)
 #define MICROPY_PY_IO                       (0) // Use print() but no file objects
 #define MICROPY_PY_STRUCT                   (1)
-#define MICROPY_PY_SYS                      (1) // Needed for startup
 #define MICROPY_CPYTHON_COMPAT              (1)
 
 // 5. Shrink Internal Structures

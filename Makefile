@@ -13,6 +13,7 @@ EXTRA_CFLAGS += \
 	-I$(MICROPYTHON_PATH)/py \
 	-DNDEBUG
 
+# upstream sources
 MICROPYTHON_SRC += \
 	$(MICROPYTHON_PATH)/py/*.c \
 	$(MICROPYTHON_PATH)/shared/runtime/gchelper_generic.c \
@@ -20,9 +21,14 @@ MICROPYTHON_SRC += \
 	$(MICROPYTHON_PATH)/shared/runtime/interrupt_char.c \
 	$(MICROPYTHON_PATH)/shared/runtime/stdout_helpers.c \
 	$(MICROPYTHON_PATH)/shared/runtime/sys_stdio_mphal.c \
-	$(MICROPYTHON_PATH)/shared/readline/readline.c
+	$(MICROPYTHON_PATH)/shared/readline/readline.c \
+	$(MICROPYTHON_PATH)/extmod/modtime.c
 
-ADDITIONAL_C_FILES += $(MICROPYTHON_SRC)
+# modules for the port
+MICROPYTHON_SRC += \
+	./machine_pin.c
+
+ADDITIONAL_C_FILES += $(MICROPYTHON_SRC) $(MICROPYTHON_PORT_MODULES)
 LDFLAGS += -lm
 
 GENHDR_DIR = genhdr
