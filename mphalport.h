@@ -12,22 +12,17 @@ extern volatile uint8_t rx_buf[RX_BUF_SIZE];
 extern volatile int rx_head;
 extern volatile int rx_tail;
 
-#if defined(CH32V10x) || defined(CH570_CH572) || defined(CH584_CH585)
-	#define SYSTICKCNT (SysTick->CNTL)
-#else
-	#define SYSTICKCNT (SysTick->CNT)
-#endif
 
 static inline mp_uint_t mp_hal_ticks_cpu(void) {
-	return SYSTICKCNT;
+	return SysTick->CNT;
 }
 
 static inline mp_uint_t mp_hal_ticks_us(void) {
-	return SYSTICKCNT * DELAY_US_TIME;
+	return SysTick->CNT * DELAY_US_TIME;
 }
 
 static inline mp_uint_t mp_hal_ticks_ms(void) {
-	return SYSTICKCNT * DELAY_MS_TIME;
+	return SysTick->CNT * DELAY_MS_TIME;
 }
 
 static inline void mp_hal_delay_us(mp_uint_t us) {
