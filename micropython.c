@@ -11,10 +11,6 @@
 #include "py/stackctrl.h"
 #include "shared/runtime/pyexec.h"
 
-#if defined(FUNCONF_USE_USBPRINTF) && FUNCONF_USE_USBPRINTF
-#include "fsusb.h"
-#endif
-
 extern int errno; // for libm
 int *__errno(void) { return &errno; }
 
@@ -58,11 +54,8 @@ void handle_input(int numbytes, uint8_t *data) {
 		}
 	}
 }
-#if defined(FUNCONF_USE_DEBUGPRINTF) && FUNCONF_USE_DEBUGPRINTF
 void handle_debug_input(int numbytes, uint8_t *data) { handle_input(numbytes, data); }
-#elif defined(FUNCONF_USE_USBPRINTF) && FUNCONF_USE_USBPRINTF
 void handle_usbfs_input(int numbytes, uint8_t *data) { handle_input(numbytes, data); }
-#endif
 
 static uint8_t mp_heap[MICROPY_HEAP_SIZE];
 
@@ -85,14 +78,12 @@ void micropython_task() {
 	mp_deinit();	
 }
 
-
+extern void usb_init();
 int main(void) {
 	SystemInit();
 	funGpioInitAll(); // no-op on ch5xx
 
-#if defined(FUNCONF_USE_USBPRINTF) && FUNCONF_USE_USBPRINTF
-	USBFSSetup();
-#endif
+	usb_init();
 
 	printf("Booting MCU\n");
 

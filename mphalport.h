@@ -14,15 +14,15 @@ extern volatile int rx_tail;
 
 
 static inline mp_uint_t mp_hal_ticks_cpu(void) {
-	return SysTick->CNT;
+	return funSysTick32();
 }
 
 static inline mp_uint_t mp_hal_ticks_us(void) {
-	return SysTick->CNT * DELAY_US_TIME;
+	return funSysTick32() * DELAY_US_TIME;
 }
 
 static inline mp_uint_t mp_hal_ticks_ms(void) {
-	return SysTick->CNT * DELAY_MS_TIME;
+	return funSysTick32() * DELAY_MS_TIME;
 }
 
 static inline void mp_hal_delay_us(mp_uint_t us) {
@@ -41,10 +41,14 @@ static inline mp_uint_t mp_hal_stdout_tx_strn(const char *str, size_t len) {
 	return len;
 }
 
+extern void poll_usbfs_input();
 static inline int mp_hal_stdin_rx_chr(void) {
 	char c = 0;
 	while(1) {
+#if defined(FUNCONF_USE_DEBUGPRINTF) && FUNCONF_USE_DEBUGPRINTF
 		poll_input();
+#endif
+		poll_usbfs_input();
 		if (rx_head != rx_tail) {
 			c = rx_buf[rx_tail];
 			rx_tail = (rx_tail + 1) % RX_BUF_SIZE;

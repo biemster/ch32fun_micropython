@@ -39,7 +39,7 @@ $(QSTR_GENERATED_HEADER): $(MICROPYTHON_SRC) $(MPVERSION_HEADER) $(ROOT_POINTERS
 		-DNO_QSTR \
 		$(CFLAGS) \
 		$(GENHDR_DIR)/qstrdefs.raw.h > $(GENHDR_DIR)/qstrdefs.pre.h
-	awk '{print gensub(/MP_QSTR_([a-zA-Z0-9_]*)/, "\nQ(\\1)\n", "g")}' $(GENHDR_DIR)/qstrdefs.pre.h > $(GENHDR_DIR)/qstrdefs.post.h
+	sed 's/MP_QSTR_\([a-zA-Z0-9_]*\)/\nQ(\1)\n/g' $(GENHDR_DIR)/qstrdefs.pre.h > $(GENHDR_DIR)/qstrdefs.post.h
 
 	@echo "  QSTR: Generating header..."
 	$(PYTHON) $(MICROPYTHON_PATH)/py/makeqstrdata.py $(GENHDR_DIR)/qstrdefs.post.h > $@

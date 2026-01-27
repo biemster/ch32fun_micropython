@@ -7,8 +7,8 @@
 #define FUNCONF_SYSTEM_CORE_CLOCK 60 * 1000 * 1000     // keep in line with CLK_SOURCE_CH5XX
 
 #define FUNCONF_DEBUG_HARDFAULT   1
+#define FUNCONF_USE_DEBUGPRINTF   1 // we have printf over CDC ACM
 #define FUNCONF_USE_CLK_SEC       0
-#define FUNCONF_USE_USBPRINTF     0
-#define FUNCONF_USE_DEBUGPRINTF   1
+#define FUNCONF_USE_USBPRINTF     0 // already has CDC ACM implemented
 
 #endif
