@@ -29,6 +29,7 @@ MICROPYTHON_SRC += \
 # modules for the port
 MICROPYTHON_SRC += \
 	./usbfs_cdc_msc.c \
+	./ram_main_py.c \
 	./machine_pin.c
 
 ADDITIONAL_C_FILES += $(MICROPYTHON_SRC) $(MICROPYTHON_PORT_MODULES)

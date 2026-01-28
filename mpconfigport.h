@@ -15,6 +15,7 @@
 #define MICROPY_PY_THREAD_GIL               (0) // Global Interpreter Lock
 #define MICROPY_TASK_PRIO                   (5) // FreeRTOS task priority
 #define MICROPY_ENABLE_GC                   (1)
+#define MICROPY_ENABLE_SCHEDULER            (1)
 #define MICROPY_GCREGS_SETJMP               (1)
 #define MICROPY_HELPER_REPL                 (1)
 #define MICROPY_REPL_EVENT_DRIVEN           (0)
@@ -80,3 +81,9 @@ typedef long mp_off_t;
 #define MICROPY_HW_MCU_NAME                 "wch-riscv"
 
 #define MP_STATE_PORT                       MP_STATE_VM
+
+// for open('main.py').read()
+extern const struct _mp_obj_fun_builtin_var_t mp_builtin_open_obj;
+
+#define MICROPY_PORT_BUILTINS \
+	{ MP_ROM_QSTR(MP_QSTR_open), MP_ROM_PTR(&mp_builtin_open_obj) },

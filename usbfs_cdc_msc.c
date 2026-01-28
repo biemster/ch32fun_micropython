@@ -63,7 +63,7 @@ const uint8_t MAIN_PY[] =
 		"    sleep(.3)\n";
 static volatile int file_changed;
 static volatile uint16_t active_file_cluster = FILE_CLUSTER;
-static volatile uint32_t active_file_size = sizeof(MAIN_PY) -1;
+volatile uint32_t active_file_size = sizeof(MAIN_PY) -1;
 uint8_t RootDirEntry[32] = {
 	'm', 'a', 'i', 'n', ' ', ' ', ' ', ' ', 'p', 'y', ' ',      // 0x00: Name (11)
 	0x20,                                                       // 0x0B: Attributes

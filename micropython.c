@@ -58,9 +58,13 @@ void handle_debug_input(int numbytes, uint8_t *data) { handle_input(numbytes, da
 void handle_usbfs_input(int numbytes, uint8_t *data) { handle_input(numbytes, data); }
 
 static uint8_t mp_heap[MICROPY_HEAP_SIZE];
+extern void execute_main_py(void);
 
 // __HIGH_CODE // adds 1.2kB to RAM
 void micropython_task() {
+
+	// execute_main_py();
+
 	// This loop will block inside mp_hal_stdin_rx_chr() waiting for input.
 	while (1) {
 		if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
