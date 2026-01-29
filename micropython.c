@@ -10,6 +10,7 @@
 #include "py/mperrno.h"
 #include "py/stackctrl.h"
 #include "shared/runtime/pyexec.h"
+#include "shared/runtime/interrupt_char.h"
 
 extern int errno; // for libm
 int *__errno(void) { return &errno; }
@@ -52,10 +53,30 @@ void handle_input(int numbytes, uint8_t *data) {
 			rx_buf[rx_head] = data[i];
 			rx_head = next;
 		}
+
+		if(data[i] == mp_interrupt_char) {
+			mp_sched_keyboard_interrupt();
+		}
 	}
 }
 void handle_debug_input(int numbytes, uint8_t *data) { handle_input(numbytes, data); }
 void handle_usbfs_input(int numbytes, uint8_t *data) { handle_input(numbytes, data); }
+
+extern void poll_usbfs_input();
+uint32_t last_usbfs_poll = 0;
+void mp_hal_background_processing(void) {
+	// THIS RUNS IN MICROPY_VM_HOOK_LOOP AFTER EVERY OPCODE, so we need to be really quick
+
+	// Only poll every 1ms
+	if (mp_hal_ticks_ms() != last_usbfs_poll) {
+		last_usbfs_poll = mp_hal_ticks_ms();
+
+#if defined(FUNCONF_USE_DEBUGPRINTF) && FUNCONF_USE_DEBUGPRINTF
+		poll_input();
+#endif
+		poll_usbfs_input();
+	}
+}
 
 static uint8_t mp_heap[MICROPY_HEAP_SIZE];
 extern void execute_main_py(void);
@@ -63,7 +84,7 @@ extern void execute_main_py(void);
 // __HIGH_CODE // adds 1.2kB to RAM
 void micropython_task() {
 
-	// execute_main_py();
+	// execute_main_py(); // this will prevent the REPL from showing if main.py blocks, so not beginner friendly
 
 	// This loop will block inside mp_hal_stdin_rx_chr() waiting for input.
 	while (1) {
