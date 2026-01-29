@@ -129,7 +129,7 @@ volatile uint32_t msc_current_offset = 0;
 volatile uint32_t msc_bytes_remaining = 0;
 
 
-
+#if !defined(FUNCONF_USE_DEBUGPRINTF) || !FUNCONF_USE_DEBUGPRINTF
 int _write(int fd, const char *buf, int size) {
 	if(USBFS_SendEndpointNEW(EP_CDC_IN, (uint8_t*)buf, size, /*copy*/1) == -1) { // -1 == busy
 		// wait for 1ms to try again once more
@@ -148,6 +148,7 @@ int putchar(int c) {
 	}
 	return 1;
 }
+#endif
 
 
 // -----------------------------------------------------------------------------
