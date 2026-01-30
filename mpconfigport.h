@@ -32,19 +32,18 @@
 // Use the minimum headroom in the chunk allocator for parse nodes.
 #define MICROPY_ALLOC_PARSE_CHUNK_INIT      (16)
 
-// --- Memory Saving Configuration ---
-// 1. Disable Floating Point (Saves huge code space and RAM)
 #define MICROPY_FLOAT_IMPL                  (MICROPY_FLOAT_IMPL_FLOAT)
-
-// 2. Disable Long Integers (Only use 31-bit small ints)
 #define MICROPY_LONGINT_IMPL                (MICROPY_LONGINT_IMPL_LONGLONG)
 
-// 3. Disable Error Reporting details
+// --- Memory Saving Configuration ---
+// Disable Error Reporting details
 #define MICROPY_ERROR_REPORTING             (MICROPY_ERROR_REPORTING_TERSE)
 #define MICROPY_ENABLE_SOURCE_LINE          (0)
 #define MICROPY_ENABLE_DOC_STRING           (0)
 
-// 4. Disable expensive core features
+// Core features
+#define MICROPY_PY_BUILTINS_MEMORYVIEW      (1)
+#define MICROPY_PY_BUILTINS_BYTES_HEX       (1)
 #define MICROPY_PY_BUILTINS_COMPLEX         (1) // doesn't work because of floats for some reason
 #define MICROPY_PY_BUILTINS_SET             (1)
 #define MICROPY_PY_BUILTINS_SLICE           (1)
@@ -61,9 +60,11 @@
 #define MICROPY_PY_CMATH                    (1)
 #define MICROPY_PY_IO                       (0) // Use print() but no file objects
 #define MICROPY_PY_STRUCT                   (1)
+#define MICROPY_PY_ARRAY                    (1)
+#define MICROPY_PY_BINASCII                 (1)
 #define MICROPY_CPYTHON_COMPAT              (1)
 
-// 5. Shrink Internal Structures
+// Shrink Internal Structures
 #define MICROPY_ALLOC_PATH_MAX              (32)
 #define MICROPY_QSTR_BYTES_IN_HASH          (1)
 

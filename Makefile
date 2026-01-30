@@ -24,13 +24,15 @@ MICROPYTHON_SRC += \
 	$(MICROPYTHON_PATH)/shared/runtime/stdout_helpers.c \
 	$(MICROPYTHON_PATH)/shared/runtime/sys_stdio_mphal.c \
 	$(MICROPYTHON_PATH)/shared/readline/readline.c \
-	$(MICROPYTHON_PATH)/extmod/modtime.c
+	$(MICROPYTHON_PATH)/extmod/modtime.c \
+	$(MICROPYTHON_PATH)/extmod/modbinascii.c
 
 # modules for the port
 MICROPYTHON_SRC += \
 	./usbfs_cdc_msc.c \
 	./ram_main_py.c \
-	./machine_pin.c
+	./machine_pin.c \
+	./modch32fun.c
 
 ADDITIONAL_C_FILES += $(MICROPYTHON_SRC) $(MICROPYTHON_PORT_MODULES)
 LDFLAGS += -lm
