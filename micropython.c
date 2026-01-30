@@ -54,7 +54,7 @@ void handle_input(int numbytes, uint8_t *data) {
 			rx_head = next;
 		}
 
-		if(data[i] == mp_interrupt_char) {
+		if(data[i] == mp_interrupt_char || data[i] == 27) { // ESC (27) for minichlink -T
 			mp_sched_keyboard_interrupt();
 		}
 	}
