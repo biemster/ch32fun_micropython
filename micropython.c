@@ -49,13 +49,14 @@ void handle_input(int numbytes, uint8_t *data) {
 	for (int i = 0; i < numbytes; i++) {
 		int next = (rx_head + 1) % RX_BUF_SIZE;
 
-		if (next != rx_tail) {
-			rx_buf[rx_head] = data[i];
-			rx_head = next;
-		}
-
-		if(data[i] == mp_interrupt_char || data[i] == 27) { // ESC (27) for minichlink -T
+		if(data[i] == mp_interrupt_char || data[i] == 0x4) { // ctrl+d (0x4) for minichlink -T
 			mp_sched_keyboard_interrupt();
+		}
+		else {
+			if (next != rx_tail) {
+				rx_buf[rx_head] = data[i];
+				rx_head = next;
+			}
 		}
 	}
 }
