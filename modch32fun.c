@@ -10,7 +10,7 @@
 #define RAM_END        (RAM_START + RAM_SIZE)
 
 #define FLASH_START    0x00000000
-#define FLASH_SIZE     (240 * 1024)
+#define FLASH_SIZE     RAM_START // not the real size, but we might want to poke beyond what the DS says
 #define FLASH_END      (FLASH_START + FLASH_SIZE)
 
 // Helper to validate pointer
