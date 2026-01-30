@@ -38,6 +38,7 @@ ADDITIONAL_C_FILES += $(MICROPYTHON_SRC) $(MICROPYTHON_PORT_MODULES)
 LDFLAGS += -lm
 
 GENHDR_DIR = genhdr
+EXTRA_CFLAGS += -I$(GENHDR_DIR)
 include ./mp.mk
 include $(CH32FUN_PATH)/ch32fun/ch32fun.mk
 

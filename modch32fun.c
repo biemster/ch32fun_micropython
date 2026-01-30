@@ -21,7 +21,82 @@ static void check_addr(uintptr_t addr, size_t len, uintptr_t start, uintptr_t en
 }
 
 // ==========================================================================
-// 1. RAM Accessor Object (ch32fun.RAM[])
+// 1. ch5xx Register Accessor ch32fun.ch5xx.R32_*
+// ==========================================================================
+
+enum { W8, W16, W32 };
+
+typedef struct {
+	qstr name;
+	uintptr_t addr;
+	uint8_t width;
+} reg_entry_t;
+
+// --- THE REGISTER TABLE ---
+static const reg_entry_t ch5xx_reg_table[] = {
+	// System Registers
+	#include "ch32fun_regdefs.h"
+};
+
+static void ch5xx_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
+	// 1. Search for the register name in our table
+	// Linear search is fine for < 50 registers. For more, sort table and use binary search.
+	const reg_entry_t *reg = NULL;
+	for (size_t i = 0; i < (sizeof(ch5xx_reg_table) / sizeof(reg_entry_t)); i++) {
+		if (ch5xx_reg_table[i].name == attr) {
+			reg = &ch5xx_reg_table[i];
+			break;
+		}
+	}
+
+	if (reg == NULL) {
+		// Not found? Let standard lookup fail (will raise AttributeError)
+		return;
+	}
+
+	// 2. Handle Load (Read)
+	if (dest[0] == MP_OBJ_NULL) {
+		mp_int_t val = 0;
+		if (reg->width == W32) {
+			val = *(volatile uint32_t *)reg->addr;
+		}
+		else if (reg->width == W16) {
+			val = *(volatile uint16_t *)reg->addr;
+		}
+		else {
+			val = *(volatile uint8_t *)reg->addr;
+		}
+		dest[0] = mp_obj_new_int_from_uint(val);
+	}
+	// 3. Handle Store (Write)
+	else if (dest[1] != MP_OBJ_NULL) {
+		mp_int_t val = mp_obj_get_int(dest[1]);
+		if (reg->width == W32) {
+			*(volatile uint32_t *)reg->addr = (uint32_t)val;
+		}
+		else if (reg->width == W16) {
+			*(volatile uint16_t *)reg->addr = (uint16_t)val;
+		}
+		else {
+			*(volatile uint8_t *)reg->addr = (uint8_t)val;
+		}
+		dest[0] = MP_OBJ_NULL; // Indicate success
+	}
+	// 4. Delete is not supported
+}
+
+static MP_DEFINE_CONST_OBJ_TYPE(
+	ch32fun_ch5xx_type,
+	MP_QSTR_ch5xx,
+	MP_TYPE_FLAG_NONE,
+	attr, ch5xx_attr
+);
+
+// Create the Singleton instance
+static const mp_obj_base_t ch5xx_obj = { &ch32fun_ch5xx_type };
+
+// ==========================================================================
+// 2. RAM Accessor Object (ch32fun.RAM[])
 // ==========================================================================
 
 // Define a minimal object type for the RAM accessor
@@ -103,73 +178,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 );
 
 // ==========================================================================
-// 2. iSLER Submodule (Static Methods)
-// ==========================================================================
-
-static mp_obj_t fun_isler_init(void) {
-	// Call ch32fun iSLER initialization
-	// iSLER_Init(); 
-	return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_0(fun_isler_init_obj, fun_isler_init);
-
-static mp_obj_t fun_isler_tx(mp_obj_t data_in) {
-	mp_buffer_info_t bufinfo;
-	mp_get_buffer_raise(data_in, &bufinfo, MP_BUFFER_READ);
-
-	// iSLER_Tx(bufinfo.buf, bufinfo.len);
-	return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_1(fun_isler_tx_obj, fun_isler_tx);
-
-static mp_obj_t fun_isler_rx(void) {
-	// uint8_t *data;
-	// size_t len;
-	// len = iSLER_Rx(&data); // Pseudocode based on expected ch32fun API
-
-	// Return empty bytes for now as placeholder
-	return mp_obj_new_bytes(NULL, 0); 
-}
-static MP_DEFINE_CONST_FUN_OBJ_0(fun_isler_rx_obj, fun_isler_rx);
-
-static const mp_rom_map_elem_t isler_locals_dict_table[] = {
-	{ MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&fun_isler_init_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_tx),   MP_ROM_PTR(&fun_isler_tx_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_rx),   MP_ROM_PTR(&fun_isler_rx_obj) },
-};
-static MP_DEFINE_CONST_DICT(isler_locals_dict, isler_locals_dict_table);
-
-static MP_DEFINE_CONST_OBJ_TYPE(
-	ch32fun_isler_type,
-	MP_QSTR_iSLER,
-	MP_TYPE_FLAG_NONE,
-	locals_dict, &isler_locals_dict
-);
-
-// ==========================================================================
-// 3. NFC Submodule
-// ==========================================================================
-
-static mp_obj_t fun_nfc_init(void) {
-	// NFC_Init();
-	return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_0(fun_nfc_init_obj, fun_nfc_init);
-
-static const mp_rom_map_elem_t nfc_locals_dict_table[] = {
-	{ MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&fun_nfc_init_obj) },
-};
-static MP_DEFINE_CONST_DICT(nfc_locals_dict, nfc_locals_dict_table);
-
-static MP_DEFINE_CONST_OBJ_TYPE(
-	ch32fun_nfc_type,
-	MP_QSTR_NFC,
-	MP_TYPE_FLAG_NONE,
-	locals_dict, &nfc_locals_dict
-);
-
-// ==========================================================================
-// 4. ch5xx_flash Submodule
+// 3. ch5xx_flash Submodule
 // ==========================================================================
 
 static mp_obj_t fun_flash_erase(mp_obj_t addr_in) {
@@ -247,19 +256,84 @@ static MP_DEFINE_CONST_OBJ_TYPE(
 );
 
 // ==========================================================================
+// 4. iSLER Submodule (Static Methods)
+// ==========================================================================
+
+static mp_obj_t fun_isler_init(void) {
+	// Call ch32fun iSLER initialization
+	// iSLER_Init();
+	return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(fun_isler_init_obj, fun_isler_init);
+
+static mp_obj_t fun_isler_tx(mp_obj_t data_in) {
+	mp_buffer_info_t bufinfo;
+	mp_get_buffer_raise(data_in, &bufinfo, MP_BUFFER_READ);
+
+	// iSLER_Tx(bufinfo.buf, bufinfo.len);
+	return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(fun_isler_tx_obj, fun_isler_tx);
+
+static mp_obj_t fun_isler_rx(void) {
+	// uint8_t *data;
+	// size_t len;
+	// len = iSLER_Rx(&data); // Pseudocode based on expected ch32fun API
+
+	// Return empty bytes for now as placeholder
+	return mp_obj_new_bytes(NULL, 0);
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(fun_isler_rx_obj, fun_isler_rx);
+
+static const mp_rom_map_elem_t isler_locals_dict_table[] = {
+	{ MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&fun_isler_init_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_tx),   MP_ROM_PTR(&fun_isler_tx_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_rx),   MP_ROM_PTR(&fun_isler_rx_obj) },
+};
+static MP_DEFINE_CONST_DICT(isler_locals_dict, isler_locals_dict_table);
+
+static MP_DEFINE_CONST_OBJ_TYPE(
+	ch32fun_isler_type,
+	MP_QSTR_iSLER,
+	MP_TYPE_FLAG_NONE,
+	locals_dict, &isler_locals_dict
+);
+
+// ==========================================================================
+// 5. NFC Submodule
+// ==========================================================================
+
+static mp_obj_t fun_nfc_init(void) {
+	// NFC_Init();
+	return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(fun_nfc_init_obj, fun_nfc_init);
+
+static const mp_rom_map_elem_t nfc_locals_dict_table[] = {
+	{ MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&fun_nfc_init_obj) },
+};
+static MP_DEFINE_CONST_DICT(nfc_locals_dict, nfc_locals_dict_table);
+
+static MP_DEFINE_CONST_OBJ_TYPE(
+	ch32fun_nfc_type,
+	MP_QSTR_NFC,
+	MP_TYPE_FLAG_NONE,
+	locals_dict, &nfc_locals_dict
+);
+
+// ==========================================================================
 // Main ch32fun Module
 // ==========================================================================
 
 static const mp_rom_map_elem_t ch32fun_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_ch32fun) },
 
-	// RAM Accessor Instance
+	{ MP_ROM_QSTR(MP_QSTR_ch5xx),       MP_ROM_PTR(&ch5xx_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_RAM),         MP_ROM_PTR(&ch32fun_ram_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_ch5xx_flash), MP_ROM_PTR(&ch32fun_flash_type) },
 
-	// Sub-modules (exposed as types/classes)
 	{ MP_ROM_QSTR(MP_QSTR_iSLER),       MP_ROM_PTR(&ch32fun_isler_type) },
 	{ MP_ROM_QSTR(MP_QSTR_NFC),         MP_ROM_PTR(&ch32fun_nfc_type) },
-	{ MP_ROM_QSTR(MP_QSTR_ch5xx_flash), MP_ROM_PTR(&ch32fun_flash_type) },
 };
 static MP_DEFINE_CONST_DICT(ch32fun_module_globals, ch32fun_module_globals_table);
 

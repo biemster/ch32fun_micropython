@@ -4,9 +4,14 @@ MPVERSION_HEADER = $(GENHDR_DIR)/mpversion.h
 ROOT_POINTERS_HEADER = $(GENHDR_DIR)/root_pointers.h
 MODULEDEFS_HEADER = $(GENHDR_DIR)/moduledefs.h
 QSTR_GENERATED_HEADER = $(GENHDR_DIR)/qstrdefs.generated.h
+HWDEF_HEADERS = $(GENHDR_DIR)/ch32fun_hwdefs.collected
+PINDEF_HEADER = $(GENHDR_DIR)/ch32fun_pindefs.h
+REGDEF_HEADER = $(GENHDR_DIR)/ch32fun_regdefs.h
 
 $(GENHDR_DIR):
 	mkdir -p $@
+	touch $(PINDEF_HEADER)
+	touch $(REGDEF_HEADER)
 
 $(MPVERSION_HEADER): | $(GENHDR_DIR)
 	@echo "  GEN: mpversion.h"
@@ -23,7 +28,14 @@ $(ROOT_POINTERS_HEADER): $(MICROPYTHON_SRC) | $(GENHDR_DIR)
 	$(PYTHON) $(MICROPYTHON_PATH)/py/make_root_pointers.py \
 		$(GENHDR_DIR)/root_pointers.collected > $@
 
-$(QSTR_GENERATED_HEADER): $(MICROPYTHON_SRC) $(MPVERSION_HEADER) $(ROOT_POINTERS_HEADER) $(MODULEDEFS_HEADER) | $(GENHDR_DIR)
+$(HWDEF_HEADERS): | $(GENHDR_DIR)
+	@echo "  GEN: ch32fun_{pin,reg}defs.h"
+	$(PREFIX)-gcc -E -dM -DNO_QSTR $(CFLAGS) $(TARGET).c > $@
+
+	sed 's/.*define \(P[ABCD][0-9]\{1,2\}\).*/{ MP_ROM_QSTR(MP_QSTR_\1),   MP_ROM_INT(\1) },/;t;d' $@ > $(PINDEF_HEADER)
+	sed 's/.*define \(R[0-9]\{1,2\}_.* \).*vu\([0-9]\{1,2\}\).*/{ MP_QSTR_\1, (uintptr_t)\&\1, W\2 },/;t;d' $@ > $(REGDEF_HEADER)
+
+$(QSTR_GENERATED_HEADER): $(MICROPYTHON_SRC) $(MPVERSION_HEADER) $(ROOT_POINTERS_HEADER) $(HWDEF_HEADERS) | $(GENHDR_DIR)
 	@echo "  QSTR: Scanning source files..."
 	$(PYTHON) $(MICROPYTHON_PATH)/py/makeqstrdefs.py pp \
 		$(PREFIX)-gcc -E \
