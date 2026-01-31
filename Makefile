@@ -31,8 +31,14 @@ MICROPYTHON_SRC += \
 MICROPYTHON_SRC += \
 	./usbfs_cdc_msc.c \
 	./ram_main_py.c \
+	./modmachine.c \
 	./machine_pin.c \
-	./modch32fun.c
+	./machine_signal.c \
+	./modch32fun.c \
+	./ch32fun_ch5xx.c \
+	./ch32fun_ch5xx_flash.c \
+	./ch32fun_isler.c \
+	./ch32fun_nfc.c
 
 ADDITIONAL_C_FILES += $(MICROPYTHON_SRC) $(MICROPYTHON_PORT_MODULES)
 LDFLAGS += -lm
