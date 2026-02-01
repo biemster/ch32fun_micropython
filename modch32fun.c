@@ -98,9 +98,9 @@ static const mp_rom_map_elem_t ch32fun_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_RAM),         MP_ROM_PTR(&ch32fun_ram_obj) },
 
 	// These are external from other files
-	{ MP_ROM_QSTR(MP_QSTR_ch5xx),       MP_ROM_PTR(&ch5xx_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_ch5xx),       MP_ROM_PTR(&ch32fun_ch5xx_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_ch5xx_flash), MP_ROM_PTR(&ch32fun_flash_type) },
-	{ MP_ROM_QSTR(MP_QSTR_iSLER),       MP_ROM_PTR(&ch32fun_isler_type) },
+	{ MP_ROM_QSTR(MP_QSTR_iSLER),       MP_ROM_PTR(&ch32fun_isler_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_NFC),         MP_ROM_PTR(&ch32fun_nfc_type) },
 };
 static MP_DEFINE_CONST_DICT(ch32fun_module_globals, ch32fun_module_globals_table);

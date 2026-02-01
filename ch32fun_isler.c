@@ -7,6 +7,31 @@
 void LLE_IRQHandler(void) __attribute__((used)); // keep the linker happy
 #include "iSLER.h"
 
+// ==========================================================================
+// 1. Hardware Register Definitions
+// ==========================================================================
+
+enum { W8, W16, W32 };
+
+typedef struct {
+	qstr name;
+	uintptr_t addr; // The memory address of the struct field
+	uint8_t width;
+} reg_entry_t;
+
+// We assume ch32fun defines global pointers or macros for LL, RF, BB
+// Example: #define BB ((BB_TypeDef *)0x40001000)
+// This macro list maps the Python Name to the Hardware Address
+static const reg_entry_t isler_reg_table[] = {
+	// Generated macros from ch32fun
+	// { MP_QSTR_BB_BB14, (uintptr_t)&BB->BB14, W32 },
+	#include "ch32fun_islerregs.h"
+};
+
+// ==========================================================================
+// 2. Methods (init, tx, rx)
+// ==========================================================================
+
 static mp_obj_t fun_isler_init(mp_obj_t arg_in) {
 	iSLERInit((uint8_t)mp_obj_get_int(arg_in));
 	return mp_const_none;
@@ -95,13 +120,62 @@ static const mp_rom_map_elem_t isler_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_PHY_2M), MP_ROM_INT(PHY_2M) },
 	{ MP_ROM_QSTR(MP_QSTR_PHY_S2), MP_ROM_INT(PHY_S2) },
 	{ MP_ROM_QSTR(MP_QSTR_PHY_S8), MP_ROM_INT(PHY_S8) },
+
+	// Generated macros from ch32fun
+	#include "ch32fun_islerdefs.h"
 };
 static MP_DEFINE_CONST_DICT(isler_locals_dict, isler_locals_dict_table);
+
+static void isler_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
+	// A. Check if it is a Register Access
+	const reg_entry_t *reg = NULL;
+	for (size_t i = 0; i < (sizeof(isler_reg_table) / sizeof(reg_entry_t)); i++) {
+		if (isler_reg_table[i].name == attr) {
+			reg = &isler_reg_table[i];
+			break;
+		}
+	}
+
+	if (reg != NULL) {
+		// Register Found!
+		if (dest[0] == MP_OBJ_NULL) {
+			// Load (Read)
+			mp_int_t val = 0;
+			if (reg->width == W32) val = *(volatile uint32_t *)reg->addr;
+			else if (reg->width == W16) val = *(volatile uint16_t *)reg->addr;
+			else val = *(volatile uint8_t *)reg->addr;
+			dest[0] = mp_obj_new_int_from_uint(val);
+		} else if (dest[1] != MP_OBJ_NULL) {
+			// Store (Write)
+			mp_int_t val = mp_obj_get_int(dest[1]);
+			if (reg->width == W32) *(volatile uint32_t *)reg->addr = (uint32_t)val;
+			else if (reg->width == W16) *(volatile uint16_t *)reg->addr = (uint16_t)val;
+			else *(volatile uint8_t *)reg->addr = (uint8_t)val;
+			dest[0] = MP_OBJ_NULL;
+		}
+		return;
+	}
+
+	// B. If NOT a register, check for Methods/Constants in the locals_dict
+	// We only handle Load (method lookup), not Store/Delete for methods
+	if (dest[0] == MP_OBJ_NULL) {
+		mp_map_elem_t *elem = mp_map_lookup((mp_map_t*)&isler_locals_dict.map, MP_OBJ_NEW_QSTR(attr), MP_MAP_LOOKUP);
+		if (elem != NULL) {
+			dest[0] = elem->value;
+			return;
+		}
+	}
+
+	// C. Fail (AttributeError will be raised by caller if dest[0] is still NULL)
+}
 
 // NOTE: Not static
 MP_DEFINE_CONST_OBJ_TYPE(
 	ch32fun_isler_type,
 	MP_QSTR_iSLER,
 	MP_TYPE_FLAG_NONE,
-	locals_dict, &isler_locals_dict
+	attr, isler_attr
 );
+
+// Create the Singleton Instance
+const mp_obj_base_t ch32fun_isler_obj = { &ch32fun_isler_type };

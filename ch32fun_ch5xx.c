@@ -18,6 +18,7 @@ typedef struct {
 // --- THE REGISTER TABLE ---
 static const reg_entry_t ch5xx_reg_table[] = {
 	// System Registers
+	// { MP_QSTR_R32_TMR_CONTROL , (uintptr_t)&R32_TMR_CONTROL , W32 },
 	#include "ch32fun_regdefs.h"
 };
 
@@ -62,4 +63,4 @@ MP_DEFINE_CONST_OBJ_TYPE(
 );
 
 // Create the Singleton instance (Not static)
-const mp_obj_base_t ch5xx_obj = { &ch32fun_ch5xx_type };
+const mp_obj_base_t ch32fun_ch5xx_obj = { &ch32fun_ch5xx_type };

@@ -29,14 +29,13 @@ void ch32fun_check_addr(uintptr_t addr, size_t len, uintptr_t start, uintptr_t e
 // ==========================================================================
 
 // Defined in ch32fun_ch5xx.c
-extern const mp_obj_type_t ch32fun_ch5xx_type;
-extern const mp_obj_base_t ch5xx_obj; // The singleton instance
+extern const mp_obj_base_t ch32fun_ch5xx_obj; // The singleton instance
 
 // Defined in ch32fun_flash.c
 extern const mp_obj_type_t ch32fun_flash_type;
 
 // Defined in ch32fun_isler.c
-extern const mp_obj_type_t ch32fun_isler_type;
+extern const mp_obj_base_t ch32fun_isler_obj; // singleton
 
 // Defined in ch32fun_nfc.c
 extern const mp_obj_type_t ch32fun_nfc_type;

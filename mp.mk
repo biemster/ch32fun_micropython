@@ -7,11 +7,15 @@ QSTR_GENERATED_HEADER = $(GENHDR_DIR)/qstrdefs.generated.h
 HWDEF_HEADERS = $(GENHDR_DIR)/ch32fun_hwdefs.collected
 PINDEF_HEADER = $(GENHDR_DIR)/ch32fun_pindefs.h
 REGDEF_HEADER = $(GENHDR_DIR)/ch32fun_regdefs.h
+ISLERDEF_HEADER = $(GENHDR_DIR)/ch32fun_islerdefs.h
+ISLERREG_HEADER = $(GENHDR_DIR)/ch32fun_islerregs.h
 
 $(GENHDR_DIR):
 	mkdir -p $@
 	touch $(PINDEF_HEADER)
 	touch $(REGDEF_HEADER)
+	touch $(ISLERDEF_HEADER)
+	touch $(ISLERREG_HEADER)
 
 $(MPVERSION_HEADER): | $(GENHDR_DIR)
 	@echo "  GEN: mpversion.h"
@@ -34,6 +38,8 @@ $(HWDEF_HEADERS): | $(GENHDR_DIR)
 
 	sed 's/.*define \(P[ABCD][0-9]\{1,2\}\).*/{ MP_ROM_QSTR(MP_QSTR_\1),   MP_ROM_INT(\1) },/;t;d' $@ > $(PINDEF_HEADER)
 	sed 's/.*define \(R[0-9]\{1,2\}_.* \).*vu\([0-9]\{1,2\}\).*/{ MP_QSTR_\1, (uintptr_t)\&\1, W\2 },/;t;d' $@ > $(REGDEF_HEADER)
+	sed 's/.*define \(LL_TX_POWER.* \).*/{ MP_ROM_QSTR(MP_QSTR_\1), MP_ROM_INT(\1) },/;t;d' genhdr/ch32fun_hwdefs.collected $@ > $(ISLERDEF_HEADER)
+	sed 's/\tvolatile uint32_t \(..\)\([0-9]\{1,2\}\).*/{ MP_QSTR_\1_\1\2, (uintptr_t)\&\1->\1\2, W32 },/;t;d' $(CH32FUN_PATH)/extralibs/iSLER.h $@ > $(ISLERREG_HEADER)
 
 $(QSTR_GENERATED_HEADER): $(MICROPYTHON_SRC) $(MPVERSION_HEADER) $(ROOT_POINTERS_HEADER) $(HWDEF_HEADERS) | $(GENHDR_DIR)
 	@echo "  QSTR: Scanning source files..."
