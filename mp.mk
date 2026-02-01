@@ -34,12 +34,13 @@ $(ROOT_POINTERS_HEADER): $(MICROPYTHON_SRC) | $(GENHDR_DIR)
 
 $(HWDEF_HEADERS): | $(GENHDR_DIR)
 	@echo "  GEN: ch32fun_{pin,reg}defs.h"
-	$(PREFIX)-gcc -E -dM -DNO_QSTR $(CFLAGS) $(TARGET).c > $@
+	$(PREFIX)-gcc -E -dM -DNO_QSTR $(CFLAGS) ./*.c > $@
 
-	sed 's/.*define \(P[ABCD][0-9]\{1,2\}\).*/{ MP_ROM_QSTR(MP_QSTR_\1),   MP_ROM_INT(\1) },/;t;d' $@ > $(PINDEF_HEADER)
-	sed 's/.*define \(R[0-9]\{1,2\}_.* \).*vu\([0-9]\{1,2\}\).*/{ MP_QSTR_\1, (uintptr_t)\&\1, W\2 },/;t;d' $@ > $(REGDEF_HEADER)
-	sed 's/.*define \(LL_TX_POWER.* \).*/{ MP_ROM_QSTR(MP_QSTR_\1), MP_ROM_INT(\1) },/;t;d' genhdr/ch32fun_hwdefs.collected $@ > $(ISLERDEF_HEADER)
+	sed 's/.*define \(P[ABCD][0-9]\{1,2\}\).*/{ MP_ROM_QSTR(MP_QSTR_\1),   MP_ROM_INT(\1) },/;t;d' $@ |sort|uniq > $(PINDEF_HEADER)
+	sed 's/.*define \(R[0-9]\{1,2\}_.* \).*vu\([0-9]\{1,2\}\).*/{ MP_QSTR_\1, (uintptr_t)\&\1, W\2 },/;t;d' $@ |sort|uniq > $(REGDEF_HEADER)
+	sed 's/.*define \(LL_TX_POWER.* \).*/{ MP_ROM_QSTR(MP_QSTR_\1), MP_ROM_INT(\1) },/;t;d' $@ |sort|uniq > $(ISLERDEF_HEADER)
 	sed 's/\tvolatile uint32_t \(..\)\([0-9]\{1,2\}\).*/{ MP_QSTR_\1_\1\2, (uintptr_t)\&\1->\1\2, W32 },/;t;d' $(CH32FUN_PATH)/extralibs/iSLER.h $@ > $(ISLERREG_HEADER)
+	sed 's/.*define \([A-Z0-9_]*\) \([BLR][BLF]\)\([0-9]\{1,2\}\).*/{ MP_QSTR_\2_\1, (uintptr_t)\&\2->\2\3, W32 },/;t;d' $@ >> $(ISLERREG_HEADER)
 
 $(QSTR_GENERATED_HEADER): $(MICROPYTHON_SRC) $(MPVERSION_HEADER) $(ROOT_POINTERS_HEADER) $(HWDEF_HEADERS) | $(GENHDR_DIR)
 	@echo "  QSTR: Scanning source files..."
