@@ -8,7 +8,7 @@
 #define EP_MSC_OUT 6
 #define EP_MSC_IN  5
 
-#define MSC_RAM_DISK_SIZE   4 * 1024
+#define MSC_RAM_DISK_SIZE   2 * 1024
 #define MSC_BLOCK_SIZE      512
 #define MSC_BLOCK_COUNT     (MSC_RAM_DISK_SIZE / MSC_BLOCK_SIZE)
 #define MSC_TOTAL_SECTORS   0x4000

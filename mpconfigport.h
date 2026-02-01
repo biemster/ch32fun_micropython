@@ -13,7 +13,6 @@
 
 #define MICROPY_PY_THREAD                   (0)
 #define MICROPY_PY_THREAD_GIL               (0) // Global Interpreter Lock
-#define MICROPY_TASK_PRIO                   (5) // FreeRTOS task priority
 #define MICROPY_ENABLE_GC                   (1)
 #define MICROPY_ENABLE_SCHEDULER            (1)
 #define MICROPY_SCHEDULER_DEPTH             (4)
@@ -25,9 +24,9 @@
 #define MICROPY_MODULE_FROZEN_STR           (0)
 // #define MICROPY_QSTR_EXTRA_POOL             mp_qstr_frozen_const_pool
 #define MICROPY_ENABLE_EXTERNAL_IMPORT      (1)
-#define MICROPY_HEAP_SIZE                   (3 * 1024) // malloced on the FreeRTOS heap
+#define MICROPY_HEAP_SIZE                   (4 * 1024)
 #define MICROPY_STACK_SIZE                  (2 * 1024)
-#define MICROPY_BYTES_PER_GC_BLOCK          (16) // or 8, matches FreeRTOS alignment
+#define MICROPY_BYTES_PER_GC_BLOCK          (16)
 
 // Use the minimum headroom in the chunk allocator for parse nodes.
 #define MICROPY_ALLOC_PARSE_CHUNK_INIT      (16)

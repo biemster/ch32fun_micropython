@@ -37,5 +37,5 @@ the `machine` module like on the other MicroPython ports.
 	- [x] System Register access
 	- [-] flash access
 	- [-] USB
-	- [ ] iSLER
+	- [-] iSLER
 	- [ ] NFC
