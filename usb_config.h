@@ -8,8 +8,8 @@
 #define FUSB_EP1_MODE         1 // TX (IN)
 #define FUSB_EP2_MODE        -1 // RX (OUT)
 #define FUSB_EP3_MODE         1 // TX (IN)
-#define FUSB_EP4_MODE        -1 // RX (OUT), not used
-#define FUSB_EP5_MODE         1 // TX (IN), not used
+#define FUSB_EP4_MODE         0 // not used
+#define FUSB_EP5_MODE         1 // TX (IN)
 #define FUSB_EP6_MODE        -1 // RX (OUT)
 #define FUSB_SUPPORTS_SLEEP   0
 #define FUSB_HID_INTERFACES   0

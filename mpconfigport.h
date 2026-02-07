@@ -31,7 +31,7 @@
 // Use the minimum headroom in the chunk allocator for parse nodes.
 #define MICROPY_ALLOC_PARSE_CHUNK_INIT      (16)
 
-#define MICROPY_FLOAT_IMPL                  (MICROPY_FLOAT_IMPL_FLOAT)
+#define MICROPY_FLOAT_IMPL                  (MICROPY_FLOAT_IMPL_NONE) // _FLOAT requires -lm
 #define MICROPY_LONGINT_IMPL                (MICROPY_LONGINT_IMPL_LONGLONG)
 
 // --- Memory Saving Configuration ---
@@ -43,7 +43,7 @@
 // Core features
 #define MICROPY_PY_BUILTINS_MEMORYVIEW      (1)
 #define MICROPY_PY_BUILTINS_BYTES_HEX       (1)
-#define MICROPY_PY_BUILTINS_COMPLEX         (1) // doesn't work because of floats for some reason
+#define MICROPY_PY_BUILTINS_COMPLEX         (0) // requires -lm
 #define MICROPY_PY_BUILTINS_SET             (1)
 #define MICROPY_PY_BUILTINS_SLICE           (1)
 #define MICROPY_PY_BUILTINS_PROPERTY        (1)
@@ -55,8 +55,8 @@
 #define MICROPY_PY_TIME_GMTIME              (0)
 #define MICROPY_PY_TIME_LOCALTIME           (0)
 #define MICROPY_PY_TIME_TIME_NS             (0)
-#define MICROPY_PY_MATH                     (1)
-#define MICROPY_PY_CMATH                    (1)
+#define MICROPY_PY_MATH                     (0) // requires -lm
+#define MICROPY_PY_CMATH                    (0) // requires -lm
 #define MICROPY_PY_IO                       (0) // Use print() but no file objects
 #define MICROPY_PY_STRUCT                   (1)
 #define MICROPY_PY_ARRAY                    (1)

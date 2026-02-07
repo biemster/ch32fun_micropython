@@ -61,21 +61,21 @@ void handle_input(int numbytes, uint8_t *data) {
 	}
 }
 void handle_debug_input(int numbytes, uint8_t *data) { handle_input(numbytes, data); }
-void handle_usbfs_input(int numbytes, uint8_t *data) { handle_input(numbytes, data); }
+void handle_usb_input(int numbytes, uint8_t *data) { handle_input(numbytes, data); }
 
-extern void poll_usbfs_input();
-uint32_t last_usbfs_poll = 0;
+extern void poll_usb_input();
+uint32_t last_usb_poll = 0;
 void mp_hal_background_processing(void) {
 	// THIS RUNS IN MICROPY_VM_HOOK_LOOP AFTER EVERY OPCODE, so we need to be really quick
 
 	// Only poll every 1ms
-	if (mp_hal_ticks_ms() != last_usbfs_poll) {
-		last_usbfs_poll = mp_hal_ticks_ms();
+	if (mp_hal_ticks_ms() != last_usb_poll) {
+		last_usb_poll = mp_hal_ticks_ms();
 
 #if defined(FUNCONF_USE_DEBUGPRINTF) && FUNCONF_USE_DEBUGPRINTF
 		poll_input();
 #endif
-		poll_usbfs_input();
+		poll_usb_input();
 	}
 }
 

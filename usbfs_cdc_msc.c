@@ -1,6 +1,18 @@
 #include <stdio.h>
 #include <string.h>
+
+#ifdef USB_USE_USBD
+// the USBD peripheral is not recommended, but there are really nice
+// v208 boards with only those pins brought out, so support is hacked in
+#include "usbd.h"
+#define USBFSSetup         USBDSetup
+#define USBFS_SetupReqLen  USBD_SetupReqLen
+#define USBFS_SetupReqType USBD_SetupReqType
+#define USBFS_PACKET_SIZE  DEF_USBD_UEP0_SIZE
+int USBFS_SendEndpointNEW(int ep, uint8_t *data, int len, int copy) { return USBD_SendEndpoint(ep, data, len); }
+#else
 #include "fsusb.h"
+#endif
 
 #define EP_CDC_IRQ 1
 #define EP_CDC_OUT 2
@@ -17,7 +29,11 @@
 // RAM Disk Storage
 uint8_t msc_ram_disk[MSC_RAM_DISK_SIZE] __attribute__((aligned(4)));
 
+#ifdef USB_USE_USBD
+void USB_LP_CAN1_RX0_IRQHandler(void) __attribute__((used)); // keep the linker happy
+#else
 void USB_IRQHandler(void) __attribute__((used)); // keep the linker happy
+#endif
 
 // -----------------------------------------------------------------------------
 // SECTOR 0: FAT16 Boot Sector (BPB) for an 8MB Drive
@@ -342,17 +358,17 @@ void MSC_PrepareDataIn(void) {
 	}
 }
 
-void handle_usbfs_input( int numbytes, uint8_t * data );
+void handle_usb_input( int numbytes, uint8_t * data );
 static uint8_t usb_inputbuffer[USBFS_PACKET_SIZE]; // this can be extended if polling rate is low
 static int usb_inbuf_idx;
-void poll_usbfs_input() {
+void poll_usb_input() {
 	if (msc_state == MSC_DATA_IN) {
 		// Host grabbed the previous packet. Load the next one.
 		MSC_PrepareDataIn();
 	}
 
 	if(usb_inbuf_idx) {
-		handle_usbfs_input(usb_inbuf_idx, usb_inputbuffer);
+		handle_usb_input(usb_inbuf_idx, usb_inputbuffer);
 		usb_inbuf_idx = 0;
 	}
 }
@@ -529,8 +545,7 @@ int HandleSetupCustom( struct _USBState *ctx, int setup_code ) {
 			ret = ctx->USBFS_SetupReqLen;
 			break;
 		case 0xFE: // MSC_GET_MAX_LUN
-			ctx->pCtrlPayloadPtr = CTRL0BUFF; // should not be needed, but it is for now
-			ctx->pCtrlPayloadPtr[0] = 0;
+			CTRL0BUFF[0] = 0;
 			ret = 1;
 			break;
 		default:
