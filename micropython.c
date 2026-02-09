@@ -71,6 +71,7 @@ void mp_hal_background_processing(void) {
 	// Only poll every 1ms
 	if (mp_hal_ticks_ms() != last_usb_poll) {
 		last_usb_poll = mp_hal_ticks_ms();
+		mp_handle_pending(true);
 
 #if defined(FUNCONF_USE_DEBUGPRINTF) && FUNCONF_USE_DEBUGPRINTF
 		poll_input();

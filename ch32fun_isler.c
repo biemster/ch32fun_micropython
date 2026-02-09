@@ -1,14 +1,122 @@
 #include "py/runtime.h"
+#include "py/ringbuf.h"
+#include "py/objstr.h"
 #include "modch32fun.h"
 
 // ==========================================================================
 // iSLER Submodule
 // ==========================================================================
 void LLE_IRQHandler(void) __attribute__((used)); // keep the linker happy
+#define ISLER_CALLBACK mod_isler_rx_isr
+void ISLER_CALLBACK(void); // this should have been in extralibs/iSLER.h
 #include "iSLER.h"
 
 // ==========================================================================
-// 1. Hardware Register Definitions
+// RX Ring Buffer Implementation
+// ==========================================================================
+// We need a buffer to store packets because Python might not read them fast enough.
+// Size: 512 bytes (approx 2 large packets or many small ones)
+#define RX_BUF_SIZE 512
+
+typedef struct {
+	uint8_t buf[RX_BUF_SIZE];
+	volatile uint16_t head;
+	volatile uint16_t tail;
+} isler_ringbuf_t;
+
+static isler_ringbuf_t rx_fifo;
+
+// Helper to push data (Called from ISR)
+static void rx_fifo_push(const uint8_t *data, size_t len) {
+	for (size_t i = 0; i < len; i++) {
+		uint16_t next = (rx_fifo.head + 1) % RX_BUF_SIZE;
+		if (next != rx_fifo.tail) { // Only push if not full
+			rx_fifo.buf[rx_fifo.head] = data[i];
+			rx_fifo.head = next;
+		}
+	}
+}
+
+// Helper to pop data (Called from Python context)
+static int rx_fifo_pop(void) {
+	if (rx_fifo.head == rx_fifo.tail) {
+		return -1; // Empty
+	}
+	int val = rx_fifo.buf[rx_fifo.tail];
+	rx_fifo.tail = (rx_fifo.tail + 1) % RX_BUF_SIZE;
+	return val;
+}
+
+static size_t rx_fifo_count(void) {
+	if (rx_fifo.head >= rx_fifo.tail) {
+		return rx_fifo.head - rx_fifo.tail;
+	}
+	return (RX_BUF_SIZE - rx_fifo.tail) + rx_fifo.head;
+}
+
+// ==========================================================================
+// ISR Handler (The "Hard" Interrupt)
+// ==========================================================================
+
+// Global reference to the user's Python callback function
+static mp_obj_t isler_callback_obj = mp_const_none;
+
+void mod_isler_rx_isr(void) {
+	uint8_t *frame = (uint8_t *)LLE_BUF;
+	uint8_t len = frame[1] + 2;
+
+	if (len > 0 && len < 255) {
+		rx_fifo_push(frame, len);
+	}
+
+	if (isler_callback_obj != mp_const_none) {
+		mp_sched_schedule(isler_callback_obj, mp_const_none);
+	}
+}
+
+// ==========================================================================
+// Python Methods
+// ==========================================================================
+
+// Method: iSLER.irq(handler)
+static mp_obj_t fun_isler_irq(mp_obj_t handler) {
+	isler_callback_obj = handler;
+	return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(fun_isler_irq_obj, fun_isler_irq);
+
+// Method: iSLER.any() -> Returns number of bytes available
+static mp_obj_t fun_isler_any(void) {
+	return MP_OBJ_NEW_SMALL_INT(rx_fifo_count());
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(fun_isler_any_obj, fun_isler_any);
+
+// Method: iSLER.read([len])
+static mp_obj_t fun_isler_read(size_t n_args, const mp_obj_t *args) {
+	size_t count = rx_fifo_count();
+
+	if (n_args > 0) {
+		size_t req = mp_obj_get_int(args[0]);
+		if (req < count) count = req;
+	}
+
+	if (count == 0) {
+		return mp_const_none;
+	}
+
+	vstr_t vstr;
+	vstr_init_len(&vstr, count);
+
+	for (size_t i = 0; i < count; i++) {
+		vstr.buf[i] = (byte)rx_fifo_pop();
+	}
+
+	return mp_obj_new_bytes_from_vstr(&vstr);
+}
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(fun_isler_read_obj, 0, 1, fun_isler_read);
+
+// ==========================================================================
+// Hardware Register Definitions
 // ==========================================================================
 
 enum { W8, W16, W32 };
@@ -29,7 +137,7 @@ static const reg_entry_t isler_reg_table[] = {
 };
 
 // ==========================================================================
-// 2. Methods (init, tx, rx)
+// Methods (init, tx, rx)
 // ==========================================================================
 
 static mp_obj_t fun_isler_init(mp_obj_t arg_in) {
@@ -38,16 +146,27 @@ static mp_obj_t fun_isler_init(mp_obj_t arg_in) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(fun_isler_init_obj, fun_isler_init);
 
-static mp_obj_t fun_isler_rx(void) {
-	// Return empty bytes placeholder
-	return mp_obj_new_bytes(NULL, 0);
+// --------------------------------------------------------------------------
+// RX Function
+// Python: iSLER.rx(access_addr, channel, phy_mode)
+// --------------------------------------------------------------------------
+static mp_obj_t fun_isler_rx(size_t n_args, const mp_obj_t *args) {
+	uint32_t access_addr = mp_obj_get_int_truncated(args[0]);
+	uint8_t channel      = mp_obj_get_int(args[1]); // e.g. 37, 38, 39
+	uint8_t phy_mode     = mp_obj_get_int(args[2]); // e.g. iSLER.PHY_1M
+
+	// This is non-blocking. When a packet arrives, the ISR
+	// will fill the RingBuffer and trigger the Python callback.
+	iSLERRX(access_addr, channel, phy_mode);
+
+	return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_0(fun_isler_rx_obj, fun_isler_rx);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(fun_isler_rx_obj, 3, 3, fun_isler_rx);
 
 static mp_obj_t fun_isler_tx(size_t n_args, const mp_obj_t *args) {
 	mp_buffer_info_t mac;
 	mp_buffer_info_t bufinfo;
-	uint32_t access_addr = mp_obj_get_int(args[0]);
+	uint32_t access_addr = mp_obj_get_int_truncated(args[0]);
 	mp_get_buffer_raise(args[1], &mac, MP_BUFFER_READ);
 	mp_get_buffer_raise(args[2], &bufinfo, MP_BUFFER_READ);
 	uint8_t channel = mp_obj_get_int(args[3]);
@@ -111,7 +230,12 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(fun_isler_adv_obj, 2, 2, fun_isler_ad
 
 static const mp_rom_map_elem_t isler_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&fun_isler_init_obj) },
+
 	{ MP_ROM_QSTR(MP_QSTR_rx),   MP_ROM_PTR(&fun_isler_rx_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_irq),  MP_ROM_PTR(&fun_isler_irq_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_any),  MP_ROM_PTR(&fun_isler_any_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&fun_isler_read_obj) },
+
 	{ MP_ROM_QSTR(MP_QSTR_tx),   MP_ROM_PTR(&fun_isler_tx_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_adv),  MP_ROM_PTR(&fun_isler_adv_obj) },
 
@@ -147,7 +271,7 @@ static void isler_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
 			dest[0] = mp_obj_new_int_from_uint(val);
 		} else if (dest[1] != MP_OBJ_NULL) {
 			// Store (Write)
-			mp_int_t val = mp_obj_get_int(dest[1]);
+			mp_int_t val = mp_obj_get_int_truncated(dest[1]);
 			if (reg->width == W32) *(volatile uint32_t *)reg->addr = (uint32_t)val;
 			else if (reg->width == W16) *(volatile uint16_t *)reg->addr = (uint16_t)val;
 			else *(volatile uint8_t *)reg->addr = (uint8_t)val;

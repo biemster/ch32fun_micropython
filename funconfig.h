@@ -9,8 +9,8 @@
 
 #define FUNCONF_USE_HSE           1
 
-#define FUNCONF_DEBUG_HARDFAULT   0
-#define FUNCONF_USE_DEBUGPRINTF   0 // we have printf over CDC ACM
+#define FUNCONF_DEBUG_HARDFAULT   1
+#define FUNCONF_USE_DEBUGPRINTF   1 // we have printf over CDC ACM
 #define FUNCONF_USE_CLK_SEC       0
 #define FUNCONF_USE_USBPRINTF     0 // already has CDC ACM implemented
 
